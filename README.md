@@ -28,7 +28,7 @@
 
 1. **Клонируйте репозиторий**
    ```bash
-   git clone https://github.com/yourusername/classroom-system.git
+   git clone https://github.com/Hbematylloh/kursach.git
    cd classroom-system
     ```
 2. **Создайте виртуальное окружение**
@@ -37,10 +37,6 @@
     # Windows
     python -m venv venv
     venv\Scripts\activate
-
-    # Linux/Mac
-    python3 -m venv venv
-    source venv/bin/activate
     ```
 
 3. **Установите зависимости**

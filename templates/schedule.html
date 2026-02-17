@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-calendar"></i> Расписание занятий</h1>
+    <div>
+        <a href="/schedule/add" class="btn btn-success">
+            <i class="bi bi-plus-lg"></i> Добавить занятие
+        </a>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <form method="GET" action="/schedule" class="d-flex">
+            <input type="date" class="form-control me-2" name="date" value="{{ selected_date }}">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-calendar-check"></i> Показать
+            </button>
+        </form>
+    </div>
+    <div class="col-md-8 text-end">
+        <a href="/schedule?date={{ (selected_date - timedelta(days=1)).strftime('%Y-%m-%d') }}" class="btn btn-outline-primary">
+            <i class="bi bi-chevron-left"></i> Предыдущий день
+        </a>
+        <a href="/schedule?date={{ now().strftime('%Y-%m-%d') }}" class="btn btn-outline-primary">
+            <i class="bi bi-calendar"></i> Сегодня
+        </a>
+        <a href="/schedule?date={{ (selected_date + timedelta(days=1)).strftime('%Y-%m-%d') }}" class="btn btn-outline-primary">
+            Следующий день <i class="bi bi-chevron-right"></i>
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Расписание на {{ selected_date.strftime('%d.%m.%Y') }}</h5>
+    </div>
+    <div class="card-body">
+        {% if lessons %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Время</th>
+                            <th>Аудитория</th>
+                            <th>Корпус</th>
+                            <th>Группа</th>
+                            <th>Преподаватель</th>
+                            <th>Предмет</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for lesson in lessons %}
+                        <tr>
+                            <td>{{ lesson.start_time.strftime('%H:%M') }} - {{ lesson.end_time.strftime('%H:%M') }}</td>
+                            <td><strong>{{ lesson.classroom.number }}</strong></td>
+                            <td>{{ lesson.classroom.building }}</td>
+                            <td>{{ lesson.group_name }}</td>
+                            <td>{{ lesson.teacher_name }}</td>
+                            <td>{{ lesson.subject_name }}</td>
+                            <td>
+                                <a href="/schedule/delete/{{ lesson.id }}" class="btn btn-sm btn-danger" 
+                                   onclick="return confirm('Удалить занятие?')">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="alert alert-info text-center">
+                <i class="bi bi-info-circle"></i> На этот день занятий нет
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header bg-secondary text-white">
+        <h5 class="mb-0">Статистика на день</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="card bg-light">
+                    <div class="card-body text-center">
+                        <h3>{{ lessons|length }}</h3>
+                        <span>Всего занятий</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-light">
+                    <div class="card-body text-center">
+                        <h3>{{ lessons|map(attribute='classroom')|unique|list|length }}</h3>
+                        <span>Занято аудиторий</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-light">
+                    <div class="card-body text-center">
+                        <h3>{{ lessons|map(attribute='teacher_name')|unique|list|length }}</h3>
+                        <span>Преподавателей</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-light">
+                    <div class="card-body text-center">
+                        <h3>{{ lessons|map(attribute='group_name')|unique|list|length }}</h3>
+                        <span>Групп</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

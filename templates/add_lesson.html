@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0"><i class="bi bi-plus-lg"></i> Добавление занятия</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="/schedule/add" id="lessonForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="classroom_id" class="form-label">Аудитория <span class="text-danger">*</span></label>
+                                <select class="form-select" id="classroom_id" name="classroom_id" required>
+                                    <option value="">Выберите аудиторию...</option>
+                                    {% for classroom in classrooms %}
+                                    <option value="{{ classroom.id }}">
+                                        {{ classroom.number }} (корпус {{ classroom.building }}, {{ classroom.capacity }} чел.)
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="lesson_date" class="form-label">Дата <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="lesson_date" name="lesson_date" 
+                                       value="{{ today }}" min="{{ today }}" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="start_time" class="form-label">Время начала <span class="text-danger">*</span></label>
+                                <input type="time" class="form-control" id="start_time" name="start_time" 
+                                       value="09:00" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="end_time" class="form-label">Время окончания <span class="text-danger">*</span></label>
+                                <input type="time" class="form-control" id="end_time" name="end_time" 
+                                       value="10:30" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="group_name" class="form-label">Группа <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="group_name" name="group_name" 
+                                       placeholder="например: ИС-21" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="subject_name" class="form-label">Предмет <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="subject_name" name="subject_name" 
+                                       placeholder="например: Математика" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="teacher_name" class="form-label">Преподаватель <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="teacher_name" name="teacher_name" 
+                               placeholder="например: Иванов И.И." required>
+                    </div>
+
+                    <div class="alert alert-info" id="availability_check" style="display: none;">
+                        <i class="bi bi-info-circle"></i> <span id="availability_message"></span>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="/schedule" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Назад
+                        </a>
+                        <button type="submit" class="btn btn-success" id="submit_btn">
+                            <i class="bi bi-save"></i> Сохранить
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('classroom_id').addEventListener('change', checkAvailability);
+document.getElementById('lesson_date').addEventListener('change', checkAvailability);
+document.getElementById('start_time').addEventListener('change', checkAvailability);
+document.getElementById('end_time').addEventListener('change', checkAvailability);
+
+function checkAvailability() {
+    const classroom_id = document.getElementById('classroom_id').value;
+    const lesson_date = document.getElementById('lesson_date').value;
+    const start_time = document.getElementById('start_time').value;
+    const end_time = document.getElementById('end_time').value;
+    
+    if (!classroom_id || !lesson_date || !start_time || !end_time) {
+        return;
+    }
+    
+    // Проверка корректности времени
+    if (start_time >= end_time) {
+        document.getElementById('availability_check').style.display = 'block';
+        document.getElementById('availability_message').innerHTML = '⚠️ Время начала должно быть меньше времени окончания';
+        document.getElementById('submit_btn').disabled = true;
+        return;
+    }
+    
+    // Здесь можно добавить AJAX запрос для проверки доступности
+    // В текущей реализации проверка будет на сервере
+    
+    document.getElementById('availability_check').style.display = 'none';
+    document.getElementById('submit_btn').disabled = false;
+}
+
+// Валидация формы
+document.getElementById('lessonForm').addEventListener('submit', function(e) {
+    const start = document.getElementById('start_time').value;
+    const end = document.getElementById('end_time').value;
+    
+    if (start >= end) {
+        e.preventDefault();
+        alert('Ошибка: Время начала должно быть меньше времени окончания');
+    }
+});
+</script>
+{% endblock %}

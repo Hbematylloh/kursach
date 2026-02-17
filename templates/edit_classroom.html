@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-warning">
+                <h4 class="mb-0"><i class="bi bi-pencil"></i> Редактирование аудитории №{{ classroom.number }}</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="/classrooms/edit/{{ classroom.id }}">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="number" class="form-label">Номер аудитории <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="number" name="number" 
+                                       value="{{ classroom.number }}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="building" class="form-label">Корпус <span class="text-danger">*</span></label>
+                                <select class="form-select" id="building" name="building" required>
+                                    <option value="A" {% if classroom.building == 'A' %}selected{% endif %}>Корпус А</option>
+                                    <option value="B" {% if classroom.building == 'B' %}selected{% endif %}>Корпус Б</option>
+                                    <option value="C" {% if classroom.building == 'C' %}selected{% endif %}>Корпус В</option>
+                                    <option value="D" {% if classroom.building == 'D' %}selected{% endif %}>Корпус Г</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="floor" class="form-label">Этаж <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="floor" name="floor" 
+                                       value="{{ classroom.floor }}" required min="1" max="5">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="capacity" class="form-label">Вместимость (чел.) <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="capacity" name="capacity" 
+                                       value="{{ classroom.capacity }}" required min="1">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="area" class="form-label">Площадь (м²) <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="area" name="area" 
+                                       value="{{ classroom.area }}" required min="10" step="0.1">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mb-3">
+                        <div class="card-header bg-secondary text-white">
+                            <h5 class="mb-0">Оборудование</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="has_projector" name="has_projector"
+                                               {% if classroom.has_projector %}checked{% endif %}>
+                                        <label class="form-check-label" for="has_projector">
+                                            <i class="bi bi-projector"></i> Проектор
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="has_board" name="has_board"
+                                               {% if classroom.has_board %}checked{% endif %}>
+                                        <label class="form-check-label" for="has_board">
+                                            <i class="bi bi-pencil-square"></i> Доска
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="has_air_conditioner" name="has_air_conditioner"
+                                               {% if classroom.has_air_conditioner %}checked{% endif %}>
+                                        <label class="form-check-label" for="has_air_conditioner">
+                                            <i class="bi bi-snow"></i> Кондиционер
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="has_computers" name="has_computers"
+                                               {% if classroom.has_computers %}checked{% endif %}>
+                                        <label class="form-check-label" for="has_computers">
+                                            <i class="bi bi-pc-display"></i> Компьютеры
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3 mt-3" id="computers_count_div" 
+                                 style="display: {% if classroom.has_computers %}block{% else %}none{% endif %};">
+                                <label for="computers_count" class="form-label">Количество компьютеров</label>
+                                <input type="number" class="form-control" id="computers_count" name="computers_count" 
+                                       min="0" max="50" value="{{ classroom.computers_count }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="/classrooms" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Назад
+                        </a>
+                        <button type="submit" class="btn btn-warning">
+                            <i class="bi bi-save"></i> Обновить
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('has_computers').addEventListener('change', function() {
+    document.getElementById('computers_count_div').style.display = this.checked ? 'block' : 'none';
+    if (!this.checked) {
+        document.getElementById('computers_count').value = 0;
+    }
+});
+</script>
+{% endblock %}

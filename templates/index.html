@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="display-4">Добро пожаловать в систему учёта аудиторного фонда</h1>
+        <p class="lead">Управляйте аудиториями, расписанием и оборудованием эффективно</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary stat-card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="bi bi-door-open"></i> Всего аудиторий
+                </h5>
+                <h2 class="card-text">{{ stats.total_classrooms }}</h2>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card text-white bg-success stat-card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="bi bi-calendar-check"></i> Всего занятий
+                </h5>
+                <h2 class="card-text">{{ stats.total_lessons }}</h2>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card text-white bg-warning stat-card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="bi bi-clock"></i> Занято сегодня
+                </h5>
+                <h2 class="card-text">{{ stats.busy_today }}</h2>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card text-white bg-info stat-card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="bi bi-clock-history"></i> Свободно сегодня
+                </h5>
+                <h2 class="card-text">{{ stats.free_today }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="bi bi-door-open" style="font-size: 3rem;"></i>
+                <h5 class="card-title mt-3">Управление аудиториями</h5>
+                <p class="card-text">Добавляйте, редактируйте и удаляйте аудитории, управляйте оборудованием</p>
+                <a href="/classrooms" class="btn btn-primary">Перейти</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="bi bi-calendar" style="font-size: 3rem;"></i>
+                <h5 class="card-title mt-3">Расписание занятий</h5>
+                <p class="card-text">Составляйте расписание, предотвращайте пересечения</p>
+                <a href="/schedule" class="btn btn-primary">Перейти</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="bi bi-search" style="font-size: 3rem;"></i>
+                <h5 class="card-title mt-3">Поиск аудиторий</h5>
+                <p class="card-text">Находите свободные аудитории по параметрам</p>
+                <a href="/search" class="btn btn-primary">Перейти</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

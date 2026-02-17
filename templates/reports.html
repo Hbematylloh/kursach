@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1 class="mb-4"><i class="bi bi-file-text"></i> Отчёты</h1>
+
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Отчёт по загруженности аудиторий</h5>
+            </div>
+            <div class="card-body">
+                <p>Формирует отчёт о загруженности аудиторий за текущий период:</p>
+                <ul>
+                    <li>Количество занятий в каждой аудитории</li>
+                    <li>Процент загруженности</li>
+                    <li>Сравнительный анализ</li>
+                </ul>
+                <p class="text-muted small">Формат: Excel (XLSX)</p>
+                <a href="/api/generate-report?type=occupancy" class="btn btn-primary">
+                    <i class="bi bi-download"></i> Скачать отчёт
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-pc-display"></i> Отчёт по оборудованию</h5>
+            </div>
+            <div class="card-body">
+                <p>Формирует отчёт о наличии оборудования в аудиториях:</p>
+                <ul>
+                    <li>Наличие проекторов</li>
+                    <li>Количество компьютеров</li>
+                    <li>Оснащение аудиторий</li>
+                </ul>
+                <p class="text-muted small">Формат: Excel (XLSX)</p>
+                <a href="/api/generate-report?type=equipment" class="btn btn-success">
+                    <i class="bi bi-download"></i> Скачать отчёт
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-graph-up"></i> Предварительный просмотр</h5>
+            </div>
+            <div class="card-body">
+                <ul class="nav nav-tabs" id="reportTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="occupancy-tab" data-bs-toggle="tab" 
+                                data-bs-target="#occupancy" type="button" role="tab">
+                            Загруженность аудиторий
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="equipment-tab" data-bs-toggle="tab" 
+                                data-bs-target="#equipment" type="button" role="tab">
+                            Оборудование
+                        </button>
+                    </li>
+                </ul>
+                
+                <div class="tab-content p-3" id="reportTabsContent">
+                    <div class="tab-pane fade show active" id="occupancy" role="tabpanel">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Аудитория</th>
+                                        <th>Корпус</th>
+                                        <th>Вместимость</th>
+                                        <th>Кол-во занятий</th>
+                                        <th>Загруженность</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="occupancy_preview">
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted">
+                                            <i class="bi bi-hourglass"></i> Загрузка...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-pane fade" id="equipment" role="tabpanel">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Аудитория</th>
+                                        <th>Проектор</th>
+                                        <th>Компьютеры</th>
+                                        <th>Доска</th>
+                                        <th>Кондиционер</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="equipment_preview">
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted">
+                                            <i class="bi bi-hourglass"></i> Загрузка...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Загрузка предварительного просмотра
+document.addEventListener('DOMContentLoaded', function() {
+    loadOccupancyPreview();
+    loadEquipmentPreview();
+});
+
+function loadOccupancyPreview() {
+    fetch('/api/classrooms/occupancy-preview')
+        .then(response => response.json())
+        .then(data => {
+            const tbody = document.getElementById('occupancy_preview');
+            tbody.innerHTML = '';
+            
+            data.forEach(item => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td><strong>${item.number}</strong></td>
+                        <td>${item.building}</td>
+                        <td>${item.capacity}</td>
+                        <td>${item.lessons_count}</td>
+                        <td>
+                            <div class="progress">
+                                <div class="progress-bar" role="progressbar" 
+                                     style="width: ${item.occupancy_rate}%;" 
+                                     aria-valuenow="${item.occupancy_rate}" 
+                                     aria-valuemin="0" aria-valuemax="100">
+                                    ${item.occupancy_rate}%
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+        });
+}
+
+function loadEquipmentPreview() {
+    fetch('/api/classrooms/equipment-preview')
+        .then(response => response.json())
+        .then(data => {
+            const tbody = document.getElementById('equipment_preview');
+            tbody.innerHTML = '';
+            
+            data.forEach(item => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td><strong>${item.number}</strong></td>
+                        <td>${item.has_projector ? '✅' : '❌'}</td>
+                        <td>${item.computers_count > 0 ? item.computers_count + ' шт.' : '❌'}</td>
+                        <td>${item.has_board ? '✅' : '❌'}</td>
+                        <td>${item.has_air_conditioner ? '✅' : '❌'}</td>
+                    </tr>
+                `;
+            });
+        });
+}
+</script>
+{% endblock %}

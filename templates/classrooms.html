@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="bi bi-plus-lg"></i> Добавление новой аудитории</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="/classrooms/add">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="number" class="form-label">Номер аудитории <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="number" name="number" required 
+                                       placeholder="например: 101">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="building" class="form-label">Корпус <span class="text-danger">*</span></label>
+                                <select class="form-select" id="building" name="building" required>
+                                    <option value="">Выберите...</option>
+                                    <option value="A">Корпус А</option>
+                                    <option value="B">Корпус Б</option>
+                                    <option value="C">Корпус В</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="floor" class="form-label">Этаж <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="floor" name="floor" required 
+                                       min="1" max="5" value="1">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="capacity" class="form-label">Вместимость (чел.) <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="capacity" name="capacity" required 
+                                       min="1" max="200" value="30">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="area" class="form-label">Площадь (м²) <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="area" name="area" required 
+                                       min="10" max="200" value="50.0" step="0.1">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mb-3">
+                        <div class="card-header bg-secondary text-white">
+                            <h5 class="mb-0">Оборудование</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="has_projector" name="has_projector">
+                                        <label class="form-check-label" for="has_projector">
+                                            📽️ Проектор
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="has_board" name="has_board" checked>
+                                        <label class="form-check-label" for="has_board">
+                                            📝 Доска
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="has_air_conditioner" name="has_air_conditioner">
+                                        <label class="form-check-label" for="has_air_conditioner">
+                                            ❄️ Кондиционер
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="has_computers" name="has_computers">
+                                        <label class="form-check-label" for="has_computers">
+                                            💻 Компьютеры
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3 mt-3" id="computers_count_div" style="display: none;">
+                                <label for="computers_count" class="form-label">Количество компьютеров</label>
+                                <input type="number" class="form-control" id="computers_count" name="computers_count" 
+                                       min="0" max="50" value="0">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="/classrooms" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Назад
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save"></i> Сохранить
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('has_computers').addEventListener('change', function() {
+    document.getElementById('computers_count_div').style.display = this.checked ? 'block' : 'none';
+});
+</script>
+{% endblock %}

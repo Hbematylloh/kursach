@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1 class="mb-4"><i class="bi bi-search"></i> Поиск свободных аудиторий</h1>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Параметры поиска</h5>
+                <form id="searchForm">
+                    <div class="mb-3">
+                        <label for="date" class="form-label">Дата</label>
+                        <input type="date" class="form-control" id="date" 
+                               value="{{ now().strftime('%Y-%m-%d') }}" required>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="mb-3">
+                                <label for="start_time" class="form-label">Начало</label>
+                                <input type="time" class="form-control" id="start_time" 
+                                       value="09:00" required>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="mb-3">
+                                <label for="end_time" class="form-label">Конец</label>
+                                <input type="time" class="form-control" id="end_time" 
+                                       value="10:30" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="min_capacity" class="form-label">Мин. вместимость</label>
+                        <input type="number" class="form-control" id="min_capacity" min="0" value="0">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="building" class="form-label">Корпус</label>
+                        <select class="form-select" id="building">
+                            <option value="">Любой</option>
+                            <option value="A">Корпус А</option>
+                            <option value="B">Корпус B</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="has_projector">
+                            <label class="form-check-label" for="has_projector">
+                                Наличие проектора
+                            </label>
+                        </div>
+                        
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="has_computers">
+                            <label class="form-check-label" for="has_computers">
+                                Наличие компьютеров
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> Найти
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Результаты поиска</h5>
+                <div id="results">
+                    <p class="text-muted text-center">Задайте параметры поиска</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('searchForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const searchParams = {
+        date: document.getElementById('date').value,
+        start_time: document.getElementById('start_time').value,
+        end_time: document.getElementById('end_time').value,
+        min_capacity: document.getElementById('min_capacity').value,
+        building: document.getElementById('building').value,
+        has_projector: document.getElementById('has_projector').checked,
+        has_computers: document.getElementById('has_computers').checked
+    };
+    
+    fetch('/api/search-free-classrooms', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(searchParams)
+    })
+    .then(response => response.json())
+    .then(data => {
+        const resultsDiv = document.getElementById('results');
+        
+        if (data.length === 0) {
+            resultsDiv.innerHTML = '<p class="text-muted text-center">Нет свободных аудиторий</p>';
+            return;
+        }
+        
+        let html = '<div class="table-responsive"><table class="table table-striped">';
+        html += '<thead><tr><th>Аудитория</th><th>Корпус</th><th>Этаж</th><th>Вместимость</th><th>Оборудование</th></tr></thead><tbody>';
+        
+        data.forEach(c => {
+            html += `<tr>
+                <td><strong>${c.number}</strong></td>
+                <td>${c.building}</td>
+                <td>${c.floor}</td>
+                <td>${c.capacity} чел.</td>
+                <td>`;
+            
+            if (c.has_projector) html += '📽️ ';
+            if (c.has_computers) html += `💻${c.computers_count} `;
+            if (c.has_air_conditioner) html += '❄️ ';
+            
+            html += `</td></tr>`;
+        });
+        
+        html += '</tbody></table></div>';
+        resultsDiv.innerHTML = html;
+    });
+});
+</script>
+{% endblock %}

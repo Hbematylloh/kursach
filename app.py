@@ -1,6 +1,6 @@
 """
 Информационная система учёта аудиторного фонда
-Версия для PostgreSQL
+Основной файл приложения
 """
 
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_file
@@ -15,26 +15,14 @@ from sqlalchemy import text
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here'
 
-# ========== НАСТРОЙКА ПОДКЛЮЧЕНИЯ К POSTGRESQL ==========
-# Замените параметры на свои:
-DB_USER = 'postgres'           # Имя пользователя PostgreSQL
-DB_PASSWORD = '123'       # Пароль (измените на свой)
-DB_HOST = 'localhost'           # Хост (обычно localhost)
-DB_PORT = '5432'                # Порт PostgreSQL
-DB_NAME = 'classroom_db'        # Название базы данных
-
-# Формируем строку подключения
-app.config['SQLALCHEMY_DATABASE_URI'] = f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}'
+# Используем SQLite для тестирования
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///classroom.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-    'pool_size': 10,
+    'pool_size': 5,
     'pool_recycle': 300,
     'pool_pre_ping': True,
-    'connect_args': {
-        'client_encoding': 'utf8'
-    }
 }
-# =========================================================
 
 db = SQLAlchemy(app)
 
@@ -119,26 +107,34 @@ def utility_processor():
 @app.route('/')
 def index():
     """Главная страница с общей статистикой"""
-    total_classrooms = Classroom.query.count()
-    total_lessons = Lesson.query.count()
-    busy_today = Lesson.query.filter(Lesson.lesson_date == datetime.now().date()).count()
-    
-    stats = {
-        'total_classrooms': total_classrooms,
-        'total_lessons': total_lessons,
-        'busy_today': busy_today,
-        'free_today': total_classrooms - busy_today
-    }
-    
-    return render_template('index.html', stats=stats)
+    try:
+        total_classrooms = Classroom.query.count()
+        total_lessons = Lesson.query.count()
+        busy_today = Lesson.query.filter(Lesson.lesson_date == datetime.now().date()).count()
+        
+        stats = {
+            'total_classrooms': total_classrooms,
+            'total_lessons': total_lessons,
+            'busy_today': busy_today,
+            'free_today': total_classrooms - busy_today
+        }
+        
+        return render_template('index.html', stats=stats)
+    except Exception as e:
+        flash(f'Ошибка подключения к БД: {str(e)}', 'danger')
+        return render_template('index.html', stats={'total_classrooms': 0, 'total_lessons': 0, 'busy_today': 0, 'free_today': 0})
 
 
 # Управление аудиториями
 @app.route('/classrooms')
 def classrooms():
     """Список всех аудиторий"""
-    classrooms_list = Classroom.query.order_by(Classroom.building, Classroom.floor, Classroom.number).all()
-    return render_template('classrooms.html', classrooms=classrooms_list)
+    try:
+        classrooms_list = Classroom.query.order_by(Classroom.building, Classroom.floor, Classroom.number).all()
+        return render_template('classrooms.html', classrooms=classrooms_list)
+    except Exception as e:
+        flash(f'Ошибка загрузки аудиторий: {str(e)}', 'danger')
+        return render_template('classrooms.html', classrooms=[])
 
 
 @app.route('/classrooms/add', methods=['GET', 'POST'])
@@ -146,12 +142,17 @@ def add_classroom():
     """Добавление новой аудитории"""
     if request.method == 'POST':
         try:
+            # Проверка обязательных полей
+            if not request.form.get('number') or not request.form.get('building'):
+                flash('Заполните все обязательные поля!', 'danger')
+                return redirect(url_for('add_classroom'))
+            
             classroom = Classroom(
                 number=request.form['number'],
-                floor=int(request.form['floor']),
+                floor=int(request.form.get('floor', 1)),
                 building=request.form['building'],
-                capacity=int(request.form['capacity']),
-                area=float(request.form['area']),
+                capacity=int(request.form.get('capacity', 20)),
+                area=float(request.form.get('area', 30.0)),
                 has_projector='has_projector' in request.form,
                 has_computers='has_computers' in request.form,
                 has_board='has_board' in request.form,
@@ -231,9 +232,12 @@ def schedule():
     except ValueError:
         selected_date = datetime.now().date()
     
-    lessons = Lesson.query.filter_by(lesson_date=selected_date).order_by(Lesson.start_time).all()
-    
-    return render_template('schedule.html', lessons=lessons, selected_date=selected_date)
+    try:
+        lessons = Lesson.query.filter_by(lesson_date=selected_date).order_by(Lesson.start_time).all()
+        return render_template('schedule.html', lessons=lessons, selected_date=selected_date)
+    except Exception as e:
+        flash(f'Ошибка загрузки расписания: {str(e)}', 'danger')
+        return render_template('schedule.html', lessons=[], selected_date=selected_date)
 
 
 @app.route('/schedule/add', methods=['GET', 'POST'])
@@ -281,7 +285,10 @@ def add_lesson():
             db.session.rollback()
             flash(f'Ошибка при добавлении: {str(e)}', 'danger')
     
-    classrooms = Classroom.query.all()
+    try:
+        classrooms = Classroom.query.all()
+    except:
+        classrooms = []
     return render_template('add_lesson.html', classrooms=classrooms, today=datetime.now().date())
 
 
@@ -289,6 +296,7 @@ def add_lesson():
 def delete_lesson(id):
     """Удаление занятия"""
     lesson = Lesson.query.get_or_404(id)
+    return_date = lesson.lesson_date.strftime('%Y-%m-%d')
     
     try:
         db.session.delete(lesson)
@@ -298,7 +306,7 @@ def delete_lesson(id):
         db.session.rollback()
         flash(f'Ошибка при удалении: {str(e)}', 'danger')
     
-    return redirect(url_for('schedule', date=lesson.lesson_date.strftime('%Y-%m-%d')))
+    return redirect(url_for('schedule', date=return_date))
 
 
 # Поиск свободных аудиторий
@@ -325,6 +333,7 @@ def search_free_classrooms():
         if start_time >= end_time:
             return jsonify({'error': 'Время начала должно быть меньше времени окончания'}), 400
         
+        # Базовый запрос
         query = Classroom.query
         
         if min_capacity > 0:
@@ -341,6 +350,7 @@ def search_free_classrooms():
         
         all_classrooms = query.all()
         
+        # Находим занятые аудитории
         busy_classroom_ids = db.session.query(Lesson.classroom_id).filter(
             Lesson.lesson_date == search_date,
             Lesson.start_time < end_time,
@@ -349,6 +359,7 @@ def search_free_classrooms():
         
         busy_ids = [c[0] for c in busy_classroom_ids]
         
+        # Свободные аудитории
         free_classrooms = [c for c in all_classrooms if c.id not in busy_ids]
         result = [c.to_dict() for c in free_classrooms]
         
@@ -474,111 +485,100 @@ def equipment_preview():
         return jsonify({'error': str(e)}), 500
 
 
+# Функция проверки конфликта (для тестов)
+def check_conflict(classroom_id, lesson_date, start_time, end_time):
+    """Проверка наличия конфликтов в расписании"""
+    with app.app_context():
+        conflicting = Lesson.query.filter(
+            Lesson.classroom_id == classroom_id,
+            Lesson.lesson_date == lesson_date,
+            Lesson.start_time < end_time,
+            Lesson.end_time > start_time
+        ).first()
+        return conflicting is not None
+
+
 # Инициализация базы данных
 def init_db():
     """Создание таблиц и добавление тестовых данных"""
     with app.app_context():
-        # Проверяем подключение к базе данных
         try:
-            db.session.execute(text('SELECT 1'))
-            print("✅ Подключение к PostgreSQL успешно!")
+            # Проверяем подключение
+            db.create_all()
+            print("✅ Таблицы созданы")
+            
+            # Проверяем, есть ли данные
+            if Classroom.query.count() == 0:
+                print("Добавление тестовых данных...")
+                
+                # Тестовые аудитории
+                test_classrooms = [
+                    Classroom(number="101", floor=1, building="A", capacity=30, area=45.5,
+                             has_projector=True, has_computers=False, has_board=True,
+                             has_air_conditioner=False, computers_count=0),
+                    Classroom(number="102", floor=1, building="A", capacity=25, area=40.0,
+                             has_projector=False, has_computers=True, has_board=True,
+                             has_air_conditioner=False, computers_count=10),
+                    Classroom(number="103", floor=1, building="A", capacity=20, area=35.0,
+                             has_projector=True, has_computers=True, has_board=True,
+                             has_air_conditioner=False, computers_count=8),
+                    Classroom(number="201", floor=2, building="A", capacity=40, area=60.0,
+                             has_projector=True, has_computers=True, has_board=True,
+                             has_air_conditioner=True, computers_count=15),
+                    Classroom(number="202", floor=2, building="A", capacity=35, area=55.0,
+                             has_projector=True, has_computers=False, has_board=True,
+                             has_air_conditioner=False, computers_count=0),
+                    Classroom(number="301", floor=3, building="B", capacity=50, area=70.0,
+                             has_projector=True, has_computers=True, has_board=True,
+                             has_air_conditioner=True, computers_count=20),
+                ]
+                
+                db.session.add_all(test_classrooms)
+                db.session.commit()
+                
+                # Добавляем тестовые занятия
+                classrooms = Classroom.query.all()
+                today = date.today()
+                
+                test_lessons = [
+                    Lesson(classroom_id=classrooms[0].id, lesson_date=today,
+                          start_time=time(9, 0), end_time=time(10, 30),
+                          group_name="ИС-21", teacher_name="Иванов И.И.", subject_name="Математика"),
+                    Lesson(classroom_id=classrooms[1].id, lesson_date=today,
+                          start_time=time(9, 0), end_time=time(10, 30),
+                          group_name="П-31", teacher_name="Петрова А.С.", subject_name="Физика"),
+                    Lesson(classroom_id=classrooms[2].id, lesson_date=today,
+                          start_time=time(10, 45), end_time=time(12, 15),
+                          group_name="БД-22", teacher_name="Сидоров М.П.", subject_name="Базы данных"),
+                    Lesson(classroom_id=classrooms[3].id, lesson_date=today + timedelta(days=1),
+                          start_time=time(9, 0), end_time=time(10, 30),
+                          group_name="ИС-21", teacher_name="Иванов И.И.", subject_name="Математика"),
+                ]
+                
+                db.session.add_all(test_lessons)
+                db.session.commit()
+                
+                print(f"✅ Добавлено {len(test_classrooms)} аудиторий и {len(test_lessons)} занятий")
+            else:
+                print("✅ База данных уже содержит данные")
+                
         except Exception as e:
-            print(f"❌ Ошибка подключения к PostgreSQL: {str(e)}")
-            print("\nПроверьте параметры подключения:")
-            print(f"  DB_USER: {DB_USER}")
-            print(f"  DB_PASSWORD: {'*' * len(DB_PASSWORD)}")
-            print(f"  DB_HOST: {DB_HOST}")
-            print(f"  DB_PORT: {DB_PORT}")
-            print(f"  DB_NAME: {DB_NAME}")
-            print("\nУбедитесь, что:")
-            print("  1. PostgreSQL запущен")
-            print("  2. База данных существует (создайте через pgAdmin)")
-            print("  3. Пароль правильный")
+            print(f"❌ Ошибка при инициализации БД: {str(e)}")
             return False
-        
-        # Создаем таблицы
-        db.create_all()
-        print("✅ Таблицы созданы")
-        
-        # Проверяем, есть ли данные
-        if Classroom.query.count() == 0:
-            print("Добавление тестовых данных...")
-            
-            # Тестовые аудитории
-            test_classrooms = [
-                Classroom(number="101", floor=1, building="A", capacity=30, area=45.5,
-                         has_projector=True, has_computers=False, has_board=True,
-                         has_air_conditioner=False, computers_count=0),
-                Classroom(number="102", floor=1, building="A", capacity=25, area=40.0,
-                         has_projector=False, has_computers=True, has_board=True,
-                         has_air_conditioner=False, computers_count=10),
-                Classroom(number="103", floor=1, building="A", capacity=20, area=35.0,
-                         has_projector=True, has_computers=True, has_board=True,
-                         has_air_conditioner=False, computers_count=8),
-                Classroom(number="201", floor=2, building="A", capacity=40, area=60.0,
-                         has_projector=True, has_computers=True, has_board=True,
-                         has_air_conditioner=True, computers_count=15),
-                Classroom(number="202", floor=2, building="A", capacity=35, area=55.0,
-                         has_projector=True, has_computers=False, has_board=True,
-                         has_air_conditioner=False, computers_count=0),
-                Classroom(number="301", floor=3, building="B", capacity=50, area=70.0,
-                         has_projector=True, has_computers=True, has_board=True,
-                         has_air_conditioner=True, computers_count=20),
-            ]
-            
-            db.session.add_all(test_classrooms)
-            db.session.commit()
-            
-            # Добавляем тестовые занятия
-            classrooms = Classroom.query.all()
-            today = date.today()
-            
-            test_lessons = [
-                Lesson(classroom_id=classrooms[0].id, lesson_date=today,
-                      start_time=time(9, 0), end_time=time(10, 30),
-                      group_name="ИС-21", teacher_name="Иванов И.И.", subject_name="Математика"),
-                Lesson(classroom_id=classrooms[1].id, lesson_date=today,
-                      start_time=time(9, 0), end_time=time(10, 30),
-                      group_name="П-31", teacher_name="Петрова А.С.", subject_name="Физика"),
-                Lesson(classroom_id=classrooms[2].id, lesson_date=today,
-                      start_time=time(10, 45), end_time=time(12, 15),
-                      group_name="БД-22", teacher_name="Сидоров М.П.", subject_name="Базы данных"),
-                Lesson(classroom_id=classrooms[3].id, lesson_date=today + timedelta(days=1),
-                      start_time=time(9, 0), end_time=time(10, 30),
-                      group_name="ИС-21", teacher_name="Иванов И.И.", subject_name="Математика"),
-            ]
-            
-            db.session.add_all(test_lessons)
-            db.session.commit()
-            
-            print(f"✅ Добавлено {len(test_classrooms)} аудиторий и {len(test_lessons)} занятий")
-        else:
-            print("✅ База данных уже содержит данные")
         
         return True
 
 
-# Проверка подключения при запуске
-@app.before_request
-def before_request():
-    """Проверка подключения к БД перед каждым запросом"""
-    try:
-        db.session.execute(text('SELECT 1'))
-    except Exception as e:
-        flash(f'Ошибка подключения к базе данных: {str(e)}', 'danger')
-        return redirect(url_for('index'))
-
-
 if __name__ == '__main__':
     print("=" * 60)
-    print("ЗАПУСК ПРИЛОЖЕНИЯ ДЛЯ POSTGRESQL")
+    print("ЗАПУСК ПРИЛОЖЕНИЯ")
     print("=" * 60)
     
     # Инициализация базы данных
     if init_db():
         print("\n" + "=" * 60)
-        print(f"🚀 Сервер запущен на http://127.0.0.1:5000")
+        print("🚀 Сервер запущен на http://127.0.0.1:5000")
         print("=" * 60)
         app.run(debug=True, host='127.0.0.1', port=5000)
     else:
-        print("\n❌ Не удалось запустить приложение из-за ошибки подключения к БД")
+        print("\n❌ Не удалось запустить приложение из-за ошибки инициализации БД")
